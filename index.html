@@ -2,7 +2,7 @@
 <html lang="my">
 <head>
 <meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no">
-<title>Mini MOBA 5v5</title>
+<title>Mini MOBA 5v5 - Original Heroes</title>
 <style>
 *{box-sizing:border-box}html,body{margin:0;width:100%;height:100%;overflow:hidden;background:#1a252f;touch-action:none;user-select:none}canvas{display:block;width:100%;height:100%}#ui{position:absolute;top:9px;left:9px;color:#fff;font:14px Arial,sans-serif;text-shadow:1px 1px 3px #000;z-index:10;pointer-events:none;background:#10182099;padding:6px 8px;border-radius:7px}.joystick-container{position:absolute;bottom:28px;left:28px;width:120px;height:120px;background:#0006;border:2px solid #ffffff44;border-radius:50%;z-index:20;touch-action:none}.joystick-knob{width:50px;height:50px;background:#ffffff99;border:2px solid white;border-radius:50%;position:absolute;top:50%;left:50%;transform:translate(-50%,-50%)}.attack-btn{position:absolute;bottom:30px;right:28px;width:100px;height:100px;z-index:20;touch-action:none}.attack-btn img{width:100%;height:100%;object-fit:contain;filter:drop-shadow(0 0 5px #0009)}.centerText{position:absolute;top:45%;left:50%;transform:translate(-50%,-50%);font:bold 36px Arial;color:white;text-shadow:2px 2px 5px black;display:none;z-index:30;text-align:center}#eatBtn,#recBtn{position:absolute;z-index:25;border:2px solid #ffffffaa;border-radius:50%;color:#fff;font:bold 15px Arial,sans-serif;text-shadow:1px 1px 3px #000;box-shadow:0 2px 7px #0009;touch-action:manipulation}#eatBtn{right:34px;bottom:145px;width:68px;height:68px;background:#b8792c}#recBtn{left:50%;bottom:18px;transform:translateX(-50%);width:66px;height:48px;border-radius:14px;background:#2878c7}#zoomHint{position:absolute;left:50%;top:10px;transform:translateX(-50%);z-index:12;color:#fff;background:#10182099;padding:4px 7px;border-radius:6px;font:11px Arial;pointer-events:none}
 </style></head><body>
@@ -14,8 +14,8 @@
 (()=>{
 const canvas=document.getElementById('gameCanvas'),ctx=canvas.getContext('2d');let W=innerWidth,H=innerHeight,worldWidth=W*5,worldHeight=H*5,camera={x:0,y:0},gameOver=false,zoom=1,minZoom=.65,maxZoom=1.8;
 function resize(){W=canvas.width=innerWidth;H=canvas.height=innerHeight;worldWidth=W*5;worldHeight=H*5;}addEventListener('resize',resize);resize();
-const urls=['IMG_20261031_122552.jpg','IMG_20261031_122623.jpg','IMG_20261031_122646.jpg','IMG_20261031_122726.jpg','IMG_20261031_122755.jpg','IMG_20261031_122825.jpg','IMG_20261031_122856.jpg','IMG_20261031_122938.jpg','IMG_20261031_123014.jpg','IMG_20261031_123049.jpg'];
-const heroImgs=urls.map(n=>{let im=new Image();im.src='https://github.com/klay91680-glitch/gameheropng/blob/main/'+n+'?raw=true';return im;});
+// Original placeholder hero designs drawn in Canvas; no MLBB hero artwork is loaded.
+const heroImgs=Array.from({length:10},()=>({complete:false,naturalWidth:0}));
 function load(url){let im=new Image();im.src=url;return im}const monsterImg=load('https://cdn-icons-png.flaticon.com/512/616/616554.png'),grassImg=load('https://github.com/klay91680-glitch/gameicon/blob/main/IMG_20261031_111049.jpg?raw=true'),smallTowerImg=load('https://github.com/klay91680-glitch/gameicon/blob/main/IMG_20261031_111526.jpg?raw=true'),bigTowerImg=load('https://github.com/klay91680-glitch/gameheropng/blob/main/IMG_20261031_123701.jpg?raw=true'),bushImg=load('https://github.com/klay91680-glitch/gameicon/blob/main/IMG_20261031_111342.jpg?raw=true');
 const joystickBase=document.getElementById('joystickBase'),joystickKnob=document.getElementById('joystickKnob');let joystickVector={x:0,y:0},touchId=null;
 function moveJoy(t){let r=joystickBase.getBoundingClientRect(),dx=t.clientX-(r.left+r.width/2),dy=t.clientY-(r.top+r.height/2),d=Math.hypot(dx,dy),m=40;if(d>m){dx=dx/d*m;dy=dy/d*m;}joystickKnob.style.transform=`translate(calc(-50% + ${dx}px),calc(-50% + ${dy}px))`;joystickVector={x:dx/m,y:dy/m};}
@@ -112,8 +112,34 @@ function drawHero(unit,img,color){
   ctx.ellipse(unit.x,unit.y+unit.radius*.65,size*.34,size*.13,0,0,Math.PI*2);ctx.fill();ctx.restore();
   ctx.save();ctx.translate(unit.x,unit.y+bob);ctx.scale(unit._face*squash,1/squash);
   if(unit._moving>.2){ctx.globalAlpha=.12+Math.sin(phase)*.04;ctx.fillStyle=color;ctx.beginPath();ctx.arc(0,0,size*.56,0,Math.PI*2);ctx.fill();ctx.globalAlpha=1;}
-  if(img&&img.complete&&img.naturalWidth>0)ctx.drawImage(img,-size/2,-size/2,size,size);
-  else{ctx.fillStyle=color;ctx.beginPath();ctx.arc(0,0,size/2,0,Math.PI*2);ctx.fill();}
+  // Original mini fantasy warrior: helmet, face, armor, moving limbs, and weapon.
+  const idx=(unit.imgIndex||0)%10;
+  const palettes=[
+    ['#2477e8','#8edcff','#eaf6ff'],['#d64c46','#ffb18a','#fff0d6'],
+    ['#7b49d8','#d7a7ff','#f5e8ff'],['#218c70','#8ef0c5','#e8fff5'],
+    ['#d18b22','#ffe18b','#fff7dc'],['#45536b','#a8bdd7','#f0f6ff'],
+    ['#b83280','#ff9bd3','#fff0fa'],['#537d31','#c0ec77','#f4ffdc'],
+    ['#267d9b','#88e8ff','#e8fbff'],['#9b4f2d','#ffc19a','#fff0e2']
+  ];
+  const pal=palettes[idx], walk=Math.sin(phase*2)*unit._moving*4;
+  // Legs
+  ctx.strokeStyle='#202938';ctx.lineWidth=size*.13;ctx.lineCap='round';
+  ctx.beginPath();ctx.moveTo(-size*.13,size*.12);ctx.lineTo(-size*.18+walk/2,size*.38);
+  ctx.moveTo(size*.13,size*.12);ctx.lineTo(size*.18-walk/2,size*.38);ctx.stroke();
+  // Arms and armor torso
+  ctx.strokeStyle=pal[0];ctx.lineWidth=size*.18;
+  ctx.beginPath();ctx.moveTo(-size*.20,-size*.12);ctx.lineTo(-size*.31-walk/3,size*.08);
+  ctx.moveTo(size*.20,-size*.12);ctx.lineTo(size*.31+walk/3,size*.04);ctx.stroke();
+  ctx.fillStyle=pal[0];ctx.beginPath();ctx.moveTo(-size*.24,-size*.23);ctx.lineTo(size*.24,-size*.23);ctx.lineTo(size*.19,size*.17);ctx.lineTo(-size*.19,size*.17);ctx.closePath();ctx.fill();
+  ctx.strokeStyle=pal[1];ctx.lineWidth=2;ctx.beginPath();ctx.moveTo(-size*.12,-size*.08);ctx.lineTo(size*.12,-size*.08);ctx.stroke();
+  // Head and distinctive crest/helmet
+  ctx.fillStyle='#f2c7a2';ctx.beginPath();ctx.arc(0,-size*.30,size*.16,0,Math.PI*2);ctx.fill();
+  ctx.fillStyle=pal[2];ctx.beginPath();ctx.moveTo(-size*.20,-size*.32);ctx.lineTo(-size*.12,-size*.49);ctx.lineTo(size*.03,-size*.53);ctx.lineTo(size*.19,-size*.38);ctx.lineTo(size*.17,-size*.27);ctx.lineTo(-size*.18,-size*.27);ctx.closePath();ctx.fill();
+  ctx.fillStyle='#18202b';ctx.fillRect(-size*.105,-size*.31,size*.07,size*.035);ctx.fillRect(size*.035,-size*.31,size*.07,size*.035);
+  // Weapon: each hero gets a simple original weapon silhouette.
+  ctx.strokeStyle=idx%3===0?'#f5f8ff':idx%3===1?'#f7d36b':'#9df4ff';
+  ctx.lineWidth=size*.045;ctx.beginPath();ctx.moveTo(size*.29,size*.02);ctx.lineTo(size*.43,-size*.28);ctx.stroke();
+  ctx.fillStyle=ctx.strokeStyle;ctx.beginPath();ctx.moveTo(size*.43,-size*.28);ctx.lineTo(size*.35,-size*.19);ctx.lineTo(size*.47,-size*.20);ctx.closePath();ctx.fill();
   if(unit.attackCooldown>34){ctx.globalAlpha=.6;ctx.strokeStyle='#fff3a6';ctx.lineWidth=3;ctx.beginPath();ctx.arc(0,0,size*.57,0,Math.PI*2);ctx.stroke();}
   ctx.restore();
 }
