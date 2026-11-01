@@ -31,7 +31,7 @@
 <body>
 <div id="hud">
  <div id="heroInfo"><b id="heroName">Guardian</b> · Lv <span id="level">1</span><div>HP <span id="hpText">1000/1000</span></div><div class="bar"><div id="hpFill" class="fill"></div></div><div>Gold: <span id="gold">0</span></div></div>
- <div id="top"><b>MINI MOBA 3D · 5 vs 5</b><div>🔵 Blue <span id="blueScore">0</span> : <span id="redScore">0</span> Red 🔴</div><div id="phase">Base ကို ဖျက်ဆီးပါ</div></div>
+ <div id="top"><b>MINI MOBA 3D · 5 vs 5</b><div>🔵 Blue <span id="blueScore">0</span> : <span id="redScore">0</span> Red 🔴</div><div id="phase">Base ကို ဖျက်ဆီးပါ</div><div style="margin-top:3px"><span style="color:#5abaff">🔵 ကိုယ့်အသင်း</span>　<span style="color:#ff7777">🔴 ရန်သူ</span></div></div>
  <div id="message">Hero ရွေးချယ်ပါ</div>
  <button id="shopBtn">🪙 Shop</button><button id="heroBtn">🦸 Hero ရွေး</button>
  <div id="leftControls"><div id="joyBase"></div><div id="joyKnob"></div></div>
@@ -58,6 +58,7 @@ const heroes=[
 ];
 let scene,camera,renderer,clock,player,chosen=0,units=[],structures=[],monsters=[],effects=[],running=false,gameOver=false,blueScore=0,redScore=0,gold=0,level=1,joy={x:0,z:0},joyActive=false,attackHeld=false,lastAttack=0,skillTimes=[0,0,0],matchStart=0;
 const LANE_Z=[-22,0,22], TEAM_BLUE=0,TEAM_RED=1;
+const labels=[];
 const mat=c=>new THREE.MeshStandardMaterial({color:c,roughness:.75});
 const mats={grass:mat(0x367b43),lane:mat(0x9b9a86),blue:mat(0x318be5),red:mat(0xe14b4b),gold:mat(0xf7d34b),stone:mat(0x858c95),leaf:mat(0x256b38)};
 function mesh(geo,material,x,y,z){const o=new THREE.Mesh(geo,material);o.position.set(x,y,z);scene.add(o);return o}
@@ -107,7 +108,15 @@ function makeHeroMesh(team,index,heroIndex){
  const body=new THREE.Mesh(new THREE.CylinderGeometry(.72,.9,1.55,10),mat(color));body.position.y=1.45;group.add(body);const bodyTop=new THREE.Mesh(new THREE.SphereGeometry(.72,10,8),mat(color));bodyTop.position.y=2.18;group.add(bodyTop);const bodyBottom=new THREE.Mesh(new THREE.SphereGeometry(.78,10,8),mat(color));bodyBottom.position.y=.75;group.add(bodyBottom);
  const head=new THREE.Mesh(new THREE.SphereGeometry(.62,12,10),mat(0xffd5b0));head.position.y=2.75;group.add(head);
  const weapon=new THREE.Mesh(new THREE.BoxGeometry(.25,.25,1.8),mat(0xdfe8ef));weapon.position.set(.8,1.6,.4);weapon.rotation.x=.3;group.add(weapon);
- const ring=new THREE.Mesh(new THREE.RingGeometry(1.25,1.5,24),new THREE.MeshBasicMaterial({color:team===0?0x46b9ff:0xff5252,side:THREE.DoubleSide}));ring.rotation.x=-Math.PI/2;ring.position.y=.08;group.add(ring);
+ const teamColor=team===0?0x168cff:0xff3030;
+ const belt=new THREE.Mesh(new THREE.TorusGeometry(.72,.18,6,16),new THREE.MeshBasicMaterial({color:teamColor}));
+ belt.rotation.x=Math.PI/2;belt.position.y=1.55;group.add(belt);
+ const ring=new THREE.Mesh(new THREE.RingGeometry(1.25,1.55,24),new THREE.MeshBasicMaterial({color:teamColor,side:THREE.DoubleSide}));ring.rotation.x=-Math.PI/2;ring.position.y=.08;group.add(ring);
+ // Billboard-like colored badge above the head, easy to see from the game camera.
+ const badge=new THREE.Mesh(new THREE.CircleGeometry(.58,20),new THREE.MeshBasicMaterial({color:teamColor,side:THREE.DoubleSide}));
+ badge.position.set(0,4.15,0);group.add(badge);
+ const mark=new THREE.Mesh(new THREE.BoxGeometry(.52,.09,.09),new THREE.MeshBasicMaterial({color:0xffffff}));
+ mark.position.set(0,4.15,.03);group.add(mark);
  group.traverse(o=>{if(o.isMesh){o.castShadow=true;o.receiveShadow=true}});
  scene.add(group);return group;
 }
@@ -125,7 +134,11 @@ function spawnTeams(){
 }
 function createUnit(team,heroIndex,x,z,isPlayer){
  const d=heroes[heroIndex],unit={team,heroIndex,name:d.name,role:d.role,x,z,hp:d.hp,maxHp:d.hp,atk:d.atk,speed:d.speed,mesh:makeHeroMesh(team,units.length,heroIndex),dead:false,respawnAt:0,deaths:0,kills:0,isPlayer,level:1,lastAttack:0,target:null,skillPower:1};
- unit.mesh.position.set(x,0,z);units.push(unit);return unit;
+ unit.mesh.position.set(x,0,z);
+ const el=document.createElement('div');el.style.cssText='position:fixed;min-width:70px;text-align:center;pointer-events:none;font: bold 11px Arial;color:white;text-shadow:0 1px 3px #000;z-index:2;transform:translate(-50%,-50%)';
+ el.innerHTML=`<div style="background:${team===0?'#0879e8':'#d92727'};border:1px solid white;border-radius:5px;padding:2px 4px;margin-bottom:2px">${isPlayer?'YOU · ':''}${unit.name}</div><div style="height:5px;background:#222;border:1px solid #fff;border-radius:4px;overflow:hidden"><div style="height:100%;width:100%;background:${team===0?'#24a7ff':'#ff3d3d'}"></div></div>`;
+ document.body.appendChild(el);unit.label=el;unit.labelFill=el.querySelector('div div');labels.push(unit);
+ units.push(unit);return unit;
 }
 function makeMonster(type,x,z){
  const boss=type==='boss';let group=new THREE.Group();group.position.set(x,0,z);scene.add(group);
@@ -184,7 +197,9 @@ function updatePlayer(dt,now){
 function updateHUD(){if(!player)return;$('heroName').textContent=player.name;$('level').textContent=level;$('hpText').textContent=Math.ceil(player.hp)+'/'+Math.ceil(player.maxHp);$('hpFill').style.width=(100*player.hp/player.maxHp)+'%';$('gold').textContent=gold;$('blueScore').textContent=blueScore;$('redScore').textContent=redScore}
 function saveProgress(){try{localStorage.setItem('miniMoba3DProgress',JSON.stringify({chosen,level,gold}))}catch(e){}}
 function loadProgress(){try{const p=JSON.parse(localStorage.getItem('miniMoba3DProgress')||'{}');chosen=Number.isInteger(p.chosen)?p.chosen:0;level=p.level||1;gold=p.gold||0}catch(e){}}
-function animate(){requestAnimationFrame(animate);if(!renderer)return;const dt=Math.min(clock.getDelta(),.05),now=performance.now();if(running&&!gameOver){updatePlayer(dt,now);for(const u of units)if(!u.isPlayer)aiUpdate(u,dt,now);updateStructures(dt,now);updateMonsters(dt,now);for(const u of units){if(!u.dead){u.mesh.position.set(u.x,0,u.z);const scale=1+Math.sin(now/150+u.heroIndex)*.025;u.mesh.scale.setScalar(scale)}}if(player)updateHUD();}updateEffects(dt);if(player){camera.position.set(player.x+25,42,player.z+36);camera.lookAt(player.x,0,player.z);camera.updateProjectionMatrix()}renderer.render(scene,camera)}
+function animate(){requestAnimationFrame(animate);if(!renderer)return;const dt=Math.min(clock.getDelta(),.05),now=performance.now();if(running&&!gameOver){updatePlayer(dt,now);for(const u of units)if(!u.isPlayer)aiUpdate(u,dt,now);updateStructures(dt,now);updateMonsters(dt,now);for(const u of units){if(!u.dead){u.mesh.position.set(u.x,0,u.z);const scale=1+Math.sin(now/150+u.heroIndex)*.025;u.mesh.scale.setScalar(scale)}}if(player)updateHUD();}updateEffects(dt);if(player){camera.position.set(player.x+25,42,player.z+36);camera.lookAt(player.x,0,player.z);camera.updateProjectionMatrix()}
+ for(const u of units){if(!u.label)continue;if(u.dead||!u.mesh.visible){u.label.style.display='none';continue}const v=new THREE.Vector3(u.x,4.9,u.z).project(camera);if(v.z>1){u.label.style.display='none';continue}u.label.style.display='block';u.label.style.left=((v.x+1)*innerWidth/2)+'px';u.label.style.top=((-v.y+1)*innerHeight/2)+'px';u.labelFill.style.width=(100*u.hp/u.maxHp)+'%';}
+ renderer.render(scene,camera)}
 function updateStructures(dt,now){for(const s of structures){if(s.dead)continue;let enemies=units.filter(u=>u.team!==s.team&&!u.dead&&Math.hypot(u.x-s.x,u.z-s.z)<15);if(enemies.length&&now-s.lastAttack>1000){s.lastAttack=now;let t=enemies.sort((a,b)=>Math.hypot(a.x-s.x,a.z-s.z)-Math.hypot(b.x-s.x,b.z-s.z))[0];damageUnit(t,100,null);makeBurst(t.x,2,t.z,s.team===0?0x5abaff:0xff6060)}}}
 function updateMonsters(dt,now){for(const m of monsters){if(m.dead){if(now>=m.respawnAt){m.dead=false;m.hp=m.maxHp;m.mesh.visible=true}continue}let target=units.filter(u=>!u.dead&&Math.hypot(u.x-m.x,u.z-m.z)<9).sort((a,b)=>Math.hypot(a.x-m.x,a.z-m.z)-Math.hypot(b.x-m.x,b.z-m.z))[0];if(target&&now-m.lastAttack>1200){m.lastAttack=now;damageUnit(target,m.atk,null)}}}
 function updateEffects(dt){for(let i=effects.length-1;i>=0;i--){let e=effects[i];e.life-=dt;e.mesh.scale.multiplyScalar(1+dt*4);e.mesh.material.opacity=Math.max(0,e.life/e.max);if(e.life<=0){scene.remove(e.mesh);e.mesh.geometry.dispose();e.mesh.material.dispose();effects.splice(i,1)}}}
@@ -202,4 +217,4 @@ showPanel('Mini MOBA 3D · Hero ရွေးချယ်ပါ','<p>3D 5v5 MOBA 
 })();
 </script>
 </body>
-                                       </html>
+</html>
