@@ -2,11 +2,11 @@
 <html lang="my">
 <head>
 <meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no">
-<title>Mini MOBA 5v5 - Original Heroes</title>
+<title>Mini MOBA 5v5 - AI Reviewed</title>
 <style>
 *{box-sizing:border-box}html,body{margin:0;width:100%;height:100%;overflow:hidden;background:#1a252f;touch-action:none;user-select:none}canvas{display:block;width:100%;height:100%}#ui{position:absolute;top:9px;left:9px;color:#fff;font:14px Arial,sans-serif;text-shadow:1px 1px 3px #000;z-index:10;pointer-events:none;background:#10182099;padding:6px 8px;border-radius:7px}.joystick-container{position:absolute;bottom:28px;left:28px;width:120px;height:120px;background:#0006;border:2px solid #ffffff44;border-radius:50%;z-index:20;touch-action:none}.joystick-knob{width:50px;height:50px;background:#ffffff99;border:2px solid white;border-radius:50%;position:absolute;top:50%;left:50%;transform:translate(-50%,-50%)}.attack-btn{position:absolute;bottom:30px;right:28px;width:100px;height:100px;z-index:20;touch-action:none}.attack-btn img{width:100%;height:100%;object-fit:contain;filter:drop-shadow(0 0 5px #0009)}.centerText{position:absolute;top:45%;left:50%;transform:translate(-50%,-50%);font:bold 36px Arial;color:white;text-shadow:2px 2px 5px black;display:none;z-index:30;text-align:center}#eatBtn,#recBtn{position:absolute;z-index:25;border:2px solid #ffffffaa;border-radius:50%;color:#fff;font:bold 15px Arial,sans-serif;text-shadow:1px 1px 3px #000;box-shadow:0 2px 7px #0009;touch-action:manipulation}#eatBtn{right:34px;bottom:145px;width:68px;height:68px;background:#b8792c}#recBtn{left:50%;bottom:18px;transform:translateX(-50%);width:66px;height:48px;border-radius:14px;background:#2878c7}#zoomHint{position:absolute;left:50%;top:10px;transform:translateX(-50%);z-index:12;color:#fff;background:#10182099;padding:4px 7px;border-radius:6px;font:11px Arial;pointer-events:none}
 </style></head><body>
-<div id="ui">HP: <span id="hp-val">100</span> | Kills: <span id="kill-val">0</span> | Gold: <span id="gold-val">0</span> | Level: <span id="lvl-val">1</span> <span id="buff-val"></span></div>
+<div id="ui">HP: <span id="hp-val">100</span> | Kills: <span id="kill-val">0</span> | Gold: <span id="gold-val">0</span> | Level: <span id="lvl-val">1</span> <span id="buff-val"></span> | 5v5 မျှတမှု</div>
 <div id="respawn-text" class="centerText" style="font-size:24px;color:#ff6b6b">ပြန်လည်အသက်ဝင်ရန် <span id="timer">3</span></div><div id="win-text" class="centerText" style="color:#2ecc71">VICTORY!</div><div id="lose-text" class="centerText" style="color:#e74c3c">DEFEAT!</div>
 <div class="joystick-container" id="joystickBase"><div class="joystick-knob" id="joystickKnob"></div></div>
 <div id="zoomHint">လက်နှစ်ချောင်းဖြင့် ချုံ့/ချဲ့</div><button id="eatBtn" type="button">စား</button><button id="recBtn" type="button">REC</button><div class="attack-btn" id="attackBtn"><img src="https://github.com/klay91680-glitch/gameheropng/blob/main/IMG_20261031_123549.jpg?raw=true" alt="Attack"></div><canvas id="gameCanvas"></canvas>
@@ -44,7 +44,7 @@ function spawnBosses(){if(bossSpawned)return;bossSpawned=true;
 }
 
 function setText(id,v){document.getElementById(id).textContent=v;}function teamUnits(team){return team===0?[player,...allies]:enemies;}
-function shoot(shooter,target,isPlayer=false,isTower=false,isMonster=false){let a=Math.atan2(target.y-shooter.y,target.x-shooter.x),dmg=isTower?20:(isMonster?15:10);if(!isTower&&shooter.buffUntil>Date.now()&&shooter.buffHits>0){dmg=Math.round(dmg*1.5);shooter.buffHits--;if(shooter.buffHits<=0)shooter.buffUntil=0;}bullets.push({x:shooter.x,y:shooter.y,vx:Math.cos(a)*8,vy:Math.sin(a)*8,radius:isTower?8:5,damage:dmg,team:shooter.team??(shooter.isEnemy?1:0),owner:shooter,isTower,fromMonster:isMonster});}
+function shoot(shooter,target,isPlayer=false,isTower=false,isMonster=false){let a=Math.atan2(target.y-shooter.y,target.x-shooter.x),dmg=isTower?12:(isMonster?8:10);if(!isTower&&shooter.buffUntil>Date.now()&&shooter.buffHits>0){dmg=Math.round(dmg*1.5);shooter.buffHits--;if(shooter.buffHits<=0)shooter.buffUntil=0;}bullets.push({x:shooter.x,y:shooter.y,vx:Math.cos(a)*8,vy:Math.sin(a)*8,radius:isTower?8:5,damage:dmg,team:shooter.team??(shooter.isEnemy?1:0),owner:shooter,isTower,fromMonster:isMonster});}
 function closest(list,from,max,filter=()=>true){let best=null,dist=max;for(const o of list){if(!filter(o))continue;let d=Math.hypot(o.x-from.x,o.y-from.y);if(d<dist){dist=d;best=o;}}return best;}
 function attackNearestEnemy(){if(player.isDead||player.attackCooldown>0||gameOver)return;let target=closest(enemies,player,600,e=>!e.isDead)||null,mon=closest([...monsters,...bosses],player,600,m=>!m.isDead),tower=closest(towers.filter(t=>t.isEnemy&&t.hp>0),player,400);let d=target?Math.hypot(target.x-player.x,target.y-player.y):Infinity;if(mon&&Math.hypot(mon.x-player.x,mon.y-player.y)<d){target=mon;d=Math.hypot(mon.x-player.x,mon.y-player.y);}if(tower&&Math.hypot(tower.x-player.x,tower.y-player.y)<d)target=tower;if(target){shoot(player,target,true);player.attackCooldown=42;}}
 document.getElementById('attackBtn').addEventListener('touchstart',e=>{e.preventDefault();attackNearestEnemy();},{passive:false});document.getElementById('attackBtn').addEventListener('click',attackNearestEnemy);
@@ -63,21 +63,61 @@ function killUnit(o){if(o.isDead)return;o.hp=0;o.isDead=true;if(o===player){resp
 function moveToward(unit,target,stop=90){const dx=target.x-unit.x,dy=target.y-unit.y,d=Math.hypot(dx,dy);if(d>stop){unit.x+=dx/d*unit.speed;unit.y+=dy/d*unit.speed;}return d;}
 function enemyObjective(team,unit){const enemySide=team===0;const smalls=towers.filter(t=>t.isEnemy===enemySide&&!t.isBig&&t.hp>0);if(smalls.length){const outerY=team===0?Math.max(...smalls.map(t=>t.y)):Math.min(...smalls.map(t=>t.y));const front=smalls.filter(t=>Math.abs(t.y-outerY)<worldHeight*.18);return front.sort((a,b)=>Math.hypot(a.x-unit.x,a.y-unit.y)-Math.hypot(b.x-unit.x,b.y-unit.y))[0];}return towers.find(t=>t.isEnemy===enemySide&&t.isBig&&t.hp>0)||null;}
 function updateAI(unit,team){
- if(unit.isDead){if(Date.now()>unit.respawnAt){unit.isDead=false;unit.hp=unit.maxHp;unit.x=worldWidth/2+(Math.random()-.5)*120;unit.y=team===0?worldHeight-200:200;}return;}
+ if(unit.isDead){
+   if(Date.now()>unit.respawnAt){
+     unit.isDead=false;unit.hp=unit.maxHp;
+     unit.x=worldWidth/2+(Math.random()-.5)*120;
+     unit.y=team===0?worldHeight-200:200;
+   }
+   return;
+ }
  const foes=team===0?enemies:[player,...allies];
- // Defend a friendly tower when an opponent is attacking close to it.
  const friendlyTowers=towers.filter(t=>t.isEnemy===(team===1)&&t.hp>0);
- let intruder=null,defendDist=520;
- for(const foe of foes){if(foe.isDead)continue;for(const tw of friendlyTowers){const d=Math.hypot(foe.x-tw.x,foe.y-tw.y);if(d<defendDist){defendDist=d;intruder=foe;}}}
- // Fight nearby opposing players first, including attackers near a friendly tower.
- let target=intruder||closest(foes,unit,210,o=>!o.isDead);
- if(target){const d=moveToward(unit,target,135);if(d<=155&&unit.attackCooldown<=0){shoot(unit,target);unit.attackCooldown=42;}if(unit.attackCooldown>0)unit.attackCooldown--;return;}
- // Search for jungle monsters, attack them, and keep moving between camps.
- let jungle=closest([...monsters,...bosses],unit,520,m=>!m.isDead);
- if(jungle){const d=moveToward(unit,jungle,82);if(d<=100&&unit.attackCooldown<=0){shoot(unit,jungle,false,false,true);unit.attackCooldown=48;}if(unit.attackCooldown>0)unit.attackCooldown--;return;}
- // No nearby opponents or monsters: push the next surviving enemy tower.
+
+ // 1) Prioritize a nearby enemy hero. Do not chase enemies across the whole map.
+ let target=closest(foes,unit,230,o=>!o.isDead);
+ let targetIsDefender=false;
+
+ // 2) Help defend only when an enemy is actually close to a living friendly tower
+ // and that enemy is also reasonably close to this AI unit.
+ let bestDefense=null,bestDefenseScore=Infinity;
+ for(const foe of foes){
+   if(foe.isDead)continue;
+   const unitDist=Math.hypot(foe.x-unit.x,foe.y-unit.y);
+   if(unitDist>300)continue;
+   let nearFriendlyTower=false;
+   for(const tw of friendlyTowers){
+     if(Math.hypot(foe.x-tw.x,foe.y-tw.y)<230){nearFriendlyTower=true;break;}
+   }
+   if(nearFriendlyTower&&unitDist<bestDefenseScore){bestDefense=foe;bestDefenseScore=unitDist;}
+ }
+ if(bestDefense && (!target || bestDefenseScore < Math.hypot(target.x-unit.x,target.y-unit.y)+35)){
+   target=bestDefense;targetIsDefender=true;
+ }
+
+ // 3) Fight heroes before neutral monsters, with the same attack range/cooldown for both teams.
+ if(target){
+   const d=moveToward(unit,target,135);
+   if(d<=155&&unit.attackCooldown<=0){shoot(unit,target);unit.attackCooldown=42;}
+   if(unit.attackCooldown>0)unit.attackCooldown--;
+   return;
+ }
+
+ // 4) Farm a nearby jungle creature only if no enemy hero needs attention.
+ const jungle=closest([...monsters,...bosses],unit,360,m=>!m.isDead);
+ if(jungle){
+   const d=moveToward(unit,jungle,82);
+   if(d<=100&&unit.attackCooldown<=0){shoot(unit,jungle,false,false,true);unit.attackCooldown=42;}
+   if(unit.attackCooldown>0)unit.attackCooldown--;
+   return;
+ }
+
+ // 5) Otherwise push the next living enemy tower.
  const objective=enemyObjective(team,unit);
- if(objective){const d=moveToward(unit,objective,125);if(d<=155&&unit.attackCooldown<=0){shoot(unit,objective);unit.attackCooldown=48;}}
+ if(objective){
+   const d=moveToward(unit,objective,125);
+   if(d<=155&&unit.attackCooldown<=0){shoot(unit,objective);unit.attackCooldown=42;}
+ }
  if(unit.attackCooldown>0)unit.attackCooldown--;
 }
 const gameStartTime=Date.now();
