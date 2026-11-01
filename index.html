@@ -44,9 +44,14 @@ function spawnBosses(){if(bossSpawned)return;bossSpawned=true;
 }
 
 function setText(id,v){document.getElementById(id).textContent=v;}function teamUnits(team){return team===0?[player,...allies]:enemies;}
-function shoot(shooter,target,isPlayer=false,isTower=false,isMonster=false){let a=Math.atan2(target.y-shooter.y,target.x-shooter.x),dmg=isTower?12:(isMonster?8:10);if(!isTower&&shooter.buffUntil>Date.now()&&shooter.buffHits>0){dmg=Math.round(dmg*1.5);shooter.buffHits--;if(shooter.buffHits<=0)shooter.buffUntil=0;}bullets.push({x:shooter.x,y:shooter.y,vx:Math.cos(a)*8,vy:Math.sin(a)*8,radius:isTower?8:5,damage:dmg,team:shooter.team??(shooter.isEnemy?1:0),owner:shooter,isTower,fromMonster:isMonster});}
+function shoot(shooter,target,isPlayer=false,isTower=false,isMonster=false){let a=Math.atan2(target.y-shooter.y,target.x-shooter.x),dmg=isTower?12:(isMonster?8:10);if(!isTower&&!isMonster&&shooter.buffUntil>Date.now()&&shooter.buffHits>0){dmg=Math.round(dmg*1.5);shooter.buffHits--;if(shooter.buffHits<=0)shooter.buffUntil=0;}bullets.push({x:shooter.x,y:shooter.y,vx:Math.cos(a)*8,vy:Math.sin(a)*8,radius:isTower?8:5,damage:dmg,team:shooter.team??(shooter.isEnemy?1:0),owner:shooter,target,isTower,fromMonster:isMonster});}
 function closest(list,from,max,filter=()=>true){let best=null,dist=max;for(const o of list){if(!filter(o))continue;let d=Math.hypot(o.x-from.x,o.y-from.y);if(d<dist){dist=d;best=o;}}return best;}
-function attackNearestEnemy(){if(player.isDead||player.attackCooldown>0||gameOver)return;let target=closest(enemies,player,600,e=>!e.isDead)||null,mon=closest([...monsters,...bosses],player,600,m=>!m.isDead),tower=closest(towers.filter(t=>t.isEnemy&&t.hp>0),player,400);let d=target?Math.hypot(target.x-player.x,target.y-player.y):Infinity;if(mon&&Math.hypot(mon.x-player.x,mon.y-player.y)<d){target=mon;d=Math.hypot(mon.x-player.x,mon.y-player.y);}if(tower&&Math.hypot(tower.x-player.x,tower.y-player.y)<d)target=tower;if(target){shoot(player,target,true);player.attackCooldown=42;}}
+function attackNearestEnemy(){if(player.isDead||player.attackCooldown>0||gameOver)return;
+// Target priority: enemy heroes first, then enemy towers, then jungle creatures.
+let target=closest(enemies,player,600,e=>!e.isDead);
+if(!target)target=closest(towers.filter(t=>t.isEnemy&&t.hp>0),player,400);
+if(!target)target=closest([...monsters,...bosses],player,600,m=>!m.isDead);
+if(target){shoot(player,target,true,false,monsters.includes(target)||bosses.includes(target));player.attackCooldown=42;}}
 document.getElementById('attackBtn').addEventListener('touchstart',e=>{e.preventDefault();attackNearestEnemy();},{passive:false});document.getElementById('attackBtn').addEventListener('click',attackNearestEnemy);
 // Eat button: instantly consume the nearest jungle creature in close range.
 function eatNearbyMonster(){if(player.isDead||gameOver)return;let m=closest(monsters,player,115,o=>!o.isDead);if(!m){setText('buff-val',' | တောကောင်အနီးကပ်သွားပါ');return;}m.lastHitBy=player;m.hp=0;killUnit(m);player.hp=Math.min(player.maxHp,player.hp+20);setText('buff-val',' | စားပြီး HP +20');}
@@ -128,8 +133,11 @@ for(const base of towers.filter(t=>t.isBig&&t.hp>0)){for(const u of teamUnits(ba
 for(const t of towers){if(t.hp<=0)continue;if(t.cooldown>0){t.cooldown--;continue;}let foes= t.isEnemy?(player.isDead?allies:[player,...allies]):enemies,target=closest(foes,t,t.range,u=>!u.isDead);if(target){shoot(t,target,false,true);t.cooldown=60;}}
 allies.forEach(a=>updateAI(a,0));enemies.forEach(e=>updateAI(e,1));
 for(const m of monsters){if(m.isDead&&Date.now()>m.respawnAt){m.isDead=false;m.hp=m.maxHp;m.x=worldWidth*.1+Math.random()*worldWidth*.8;m.y=worldHeight*.2+Math.random()*worldHeight*.6;}}
-for(let i=bullets.length-1;i>=0;i--){let b=bullets[i];b.x+=b.vx;b.y+=b.vy;let hit=null;if(b.team===0){hit=closest(enemies,b,22,e=>!e.isDead)||closest([...monsters,...bosses],b,25,m=>!m.isDead);if(!hit)hit=closest(towers.filter(t=>t.isEnemy&&t.hp>0),b,25);}else{hit=closest([player,...allies],b,22,u=>!u.isDead);if(!hit)hit=closest(towers.filter(t=>!t.isEnemy&&t.hp>0),b,25);}
-if(hit){if(monsters.includes(hit)||bosses.includes(hit)){hit.hp-=b.damage;hit.lastHitBy=b.owner;if(hit.hp<=0)killUnit(hit);}else if(towers.includes(hit)){hit.hp-=b.damage;}else{hit.hp-=b.damage;if(hit.hp<=0)killUnit(hit);}bullets.splice(i,1);}else if(b.x<0||b.y<0||b.x>worldWidth||b.y>worldHeight)bullets.splice(i,1);}
+for(let i=bullets.length-1;i>=0;i--){let b=bullets[i];b.x+=b.vx;b.y+=b.vy;let hit=null;
+// Projectiles are locked to the selected target; nearby monsters/towers cannot intercept them.
+const t=b.target;const aliveTarget=t&&(t.hp===undefined||t.hp>0)&&!t.isDead;
+if(aliveTarget&&Math.hypot(t.x-b.x,t.y-b.y)<(t.radius||20)+(b.radius||5))hit=t;
+if(hit){if(monsters.includes(hit)||bosses.includes(hit)){hit.hp-=b.damage;hit.lastHitBy=b.owner;if(hit.hp<=0)killUnit(hit);}else if(towers.includes(hit)){hit.hp-=b.damage;}else{hit.hp-=b.damage;if(hit.hp<=0)killUnit(hit);}bullets.splice(i,1);}else if(!aliveTarget||b.x<0||b.y<0||b.x>worldWidth||b.y>worldHeight)bullets.splice(i,1);}
 // Camera follows the human player.
 camera.x=Math.max(0,Math.min(worldWidth-W/zoom,player.x-W/(2*zoom)));camera.y=Math.max(0,Math.min(worldHeight-H/zoom,player.y-H/(2*zoom)));setText('hp-val',Math.ceil(player.hp));document.getElementById('buff-val').textContent=player.buffUntil>Date.now()?' | Jungle Power':'';
 }
